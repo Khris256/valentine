@@ -121,6 +121,13 @@
             -webkit-tap-highlight-color: transparent;
         }
 
+        #yesBtnWrapper {
+            position: relative;
+            z-index: 100;
+            pointer-events: auto;
+            display: inline-block;
+        }
+
         #yesBtn {
             background: linear-gradient(135deg, #B76E79 0%, #E8B4B8 100%);
             color: white;
@@ -128,6 +135,9 @@
             position: relative;
             z-index: 100;
             pointer-events: auto;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
         }
 
         #yesBtn:hover {
@@ -388,7 +398,9 @@
     <div class="question-screen" id="questionScreen">
         <h1>Hi Amma, will you be my valentine? 💕</h1>
         <div class="buttons-container" id="buttonsContainer">
-            <button id="yesBtn">Yes! 💖</button>
+            <div id="yesBtnWrapper">
+                <button id="yesBtn">Yes! 💖</button>
+            </div>
             <button id="noBtn">No</button>
         </div>
     </div>
@@ -449,6 +461,7 @@
         // Button evasion logic
         const noBtn = document.getElementById('noBtn');
         const yesBtn = document.getElementById('yesBtn');
+        const yesBtnWrapper = document.getElementById('yesBtnWrapper');
         const buttonsContainer = document.getElementById('buttonsContainer');
 
         let noBtnPosition = { x: 0, y: 0 };
@@ -456,7 +469,7 @@
         function moveNoButton(mouseX, mouseY) {
             const btnRect = noBtn.getBoundingClientRect();
             const containerRect = buttonsContainer.getBoundingClientRect();
-            const yesBtnRect = yesBtn.getBoundingClientRect();
+            const yesBtnRect = yesBtnWrapper.getBoundingClientRect();
             
             const btnCenterX = btnRect.left + btnRect.width / 2;
             const btnCenterY = btnRect.top + btnRect.height / 2;
@@ -521,24 +534,50 @@
             moveNoButton(e.clientX, e.clientY);
         });
 
-        // Touch event for mobile
+        // Touch event for mobile - only trigger if not touching Yes button
         buttonsContainer.addEventListener('touchstart', (e) => {
-            e.preventDefault();
             const touch = e.touches[0];
-            moveNoButton(touch.clientX, touch.clientY);
+            const yesBtnRect = yesBtnWrapper.getBoundingClientRect();
+            
+            // Check if touch is on Yes button
+            const isTouchingYesBtn = (
+                touch.clientX >= yesBtnRect.left &&
+                touch.clientX <= yesBtnRect.right &&
+                touch.clientY >= yesBtnRect.top &&
+                touch.clientY <= yesBtnRect.bottom
+            );
+            
+            // Only prevent default and move No button if not touching Yes button
+            if (!isTouchingYesBtn) {
+                e.preventDefault();
+                moveNoButton(touch.clientX, touch.clientY);
+            }
         }, { passive: false });
 
         buttonsContainer.addEventListener('touchmove', (e) => {
-            e.preventDefault();
             const touch = e.touches[0];
-            moveNoButton(touch.clientX, touch.clientY);
+            const yesBtnRect = yesBtnWrapper.getBoundingClientRect();
+            
+            // Check if touch is on Yes button
+            const isTouchingYesBtn = (
+                touch.clientX >= yesBtnRect.left &&
+                touch.clientX <= yesBtnRect.right &&
+                touch.clientY >= yesBtnRect.top &&
+                touch.clientY <= yesBtnRect.bottom
+            );
+            
+            // Only prevent default and move No button if not touching Yes button
+            if (!isTouchingYesBtn) {
+                e.preventDefault();
+                moveNoButton(touch.clientX, touch.clientY);
+            }
         }, { passive: false });
 
         // Initialize No button position
         function initializeNoButton() {
             const containerRect = buttonsContainer.getBoundingClientRect();
             const btnRect = noBtn.getBoundingClientRect();
-            const yesBtnRect = yesBtn.getBoundingClientRect();
+            const yesBtnRect = yesBtnWrapper.getBoundingClientRect();
             
             const containerWidth = containerRect.width;
             const containerHeight = containerRect.height;
@@ -597,13 +636,25 @@
         });
 
         // Yes button click handler
-        yesBtn.addEventListener('click', () => {
+        yesBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
             document.getElementById('questionScreen').classList.add('hidden');
             document.getElementById('successScreen').classList.add('active');
             
             // Create falling flowers
             createFallingFlowers();
         });
+
+        // Add touch event handler for mobile devices
+        yesBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            document.getElementById('questionScreen').classList.add('hidden');
+            document.getElementById('successScreen').classList.add('active');
+            
+            // Create falling flowers
+            createFallingFlowers();
+        }, { passive: false });
 
         // Falling flowers animation
         function createFallingFlowers() {
