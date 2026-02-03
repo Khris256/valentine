@@ -96,22 +96,20 @@
         }
 
         .buttons-container {
-            display: flex;
-            gap: 30px;
-            flex-wrap: wrap;
-            justify-content: center;
-            align-items: center;
             position: relative;
             width: 100%;
             max-width: 600px;
-            min-height: 200px;
+            min-height: 300px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         button {
             font-family: 'Playfair Display', serif;
-            font-size: clamp(1.2rem, 3vw, 1.8rem);
+            font-size: clamp(1rem, 3vw, 1.8rem);
             font-weight: 700;
-            padding: 20px 50px;
+            padding: 18px 45px;
             border: none;
             border-radius: 50px;
             cursor: pointer;
@@ -119,12 +117,17 @@
             box-shadow: 0 8px 20px rgba(183, 110, 121, 0.3);
             text-transform: uppercase;
             letter-spacing: 2px;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
         }
 
         #yesBtn {
             background: linear-gradient(135deg, #B76E79 0%, #E8B4B8 100%);
             color: white;
             animation: pulse 2s infinite, fadeIn 1s ease-out 0.5s both;
+            position: relative;
+            z-index: 100;
+            pointer-events: auto;
         }
 
         #yesBtn:hover {
@@ -150,7 +153,9 @@
             color: white;
             position: absolute;
             animation: fadeIn 1s ease-out 0.5s both;
-            transition: all 0.1s ease;
+            transition: all 0.15s ease-out;
+            z-index: 50;
+            pointer-events: none;
         }
 
         @keyframes fadeIn {
@@ -334,12 +339,12 @@
         /* Responsive Design */
         @media (max-width: 768px) {
             .buttons-container {
-                gap: 20px;
-                min-height: 180px;
+                min-height: 280px;
             }
 
             button {
                 padding: 15px 35px;
+                font-size: clamp(0.9rem, 3vw, 1.2rem);
             }
 
             .carousel {
@@ -357,11 +362,12 @@
             }
 
             .buttons-container {
-                min-height: 160px;
+                min-height: 260px;
             }
 
             button {
-                padding: 12px 30px;
+                padding: 14px 30px;
+                font-size: clamp(0.85rem, 3vw, 1rem);
             }
 
             .carousel {
@@ -380,10 +386,10 @@
 
     <!-- Question Screen -->
     <div class="question-screen" id="questionScreen">
-        <h1>Hi Amanda, will you be my valentine? 💕</h1>
+        <h1>Hi Amma, will you be my valentine? 💕</h1>
         <div class="buttons-container" id="buttonsContainer">
             <button id="yesBtn">Yes! 💖</button>
-            <button id="noBtn">No😒</button>
+            <button id="noBtn">No</button>
         </div>
     </div>
 
@@ -392,7 +398,7 @@
         <div class="flower-container" id="flowerContainer"></div>
         
         <div class="congrats-message">
-            <h2>Yee! I knew you would accept Baby girl 🌹</h2>
+            <h2>Yay! You made my day! 🌹</h2>
             <p>
                 I'm so happy you said yes! You mean the world to me, and I can't wait to celebrate 
                 this special day with you. Every moment with you is a treasure, and I'm grateful 
@@ -401,7 +407,7 @@
         </div>
 
         <div class="album-container">
-            <h3 class="album-title">My pretty babe📸</h3>
+            <h3 class="album-title">Our Beautiful Memories 📸</h3>
             <div class="carousel" id="carousel">
                 <div class="photo-card" data-index="0">
                     <img src="images/photo1.jpg" alt="Our Memory 1" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22400%22%3E%3Crect fill=%22%23FFB6C1%22 width=%22400%22 height=%22400%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-size=%2224%22 fill=%22%23B76E79%22 text-anchor=%22middle%22 dy=%22.3em%22%3EPhoto 1%3C/text%3E%3C/svg%3E'">
@@ -450,6 +456,7 @@
         function moveNoButton(mouseX, mouseY) {
             const btnRect = noBtn.getBoundingClientRect();
             const containerRect = buttonsContainer.getBoundingClientRect();
+            const yesBtnRect = yesBtn.getBoundingClientRect();
             
             const btnCenterX = btnRect.left + btnRect.width / 2;
             const btnCenterY = btnRect.top + btnRect.height / 2;
@@ -460,27 +467,52 @@
             );
             
             // Trigger distance for button to move away
-            const triggerDistance = 150;
+            const triggerDistance = window.innerWidth < 768 ? 120 : 150;
             
             if (distance < triggerDistance) {
-                // Calculate new random position
-                const maxX = containerRect.width - btnRect.width;
-                const maxY = containerRect.height - btnRect.height;
+                // Calculate safe boundaries (avoid Yes button area)
+                const containerWidth = containerRect.width;
+                const containerHeight = containerRect.height;
+                const btnWidth = btnRect.width;
+                const btnHeight = btnRect.height;
+                
+                // Calculate Yes button's safe zone (area to avoid)
+                const yesBtnCenterX = yesBtnRect.left - containerRect.left + yesBtnRect.width / 2;
+                const yesBtnCenterY = yesBtnRect.top - containerRect.top + yesBtnRect.height / 2;
+                const safeZoneRadius = window.innerWidth < 768 ? 120 : 150;
                 
                 let newX, newY;
                 let attempts = 0;
+                let validPosition = false;
                 
-                do {
-                    newX = Math.random() * maxX;
-                    newY = Math.random() * maxY;
+                // Try to find a valid position that doesn't block Yes button
+                while (!validPosition && attempts < 20) {
+                    // Random position within container
+                    newX = Math.random() * (containerWidth - btnWidth - 40) + 20;
+                    newY = Math.random() * (containerHeight - btnHeight - 40) + 20;
+                    
+                    // Calculate distance from Yes button
+                    const distanceFromYes = Math.sqrt(
+                        Math.pow(newX + btnWidth/2 - yesBtnCenterX, 2) + 
+                        Math.pow(newY + btnHeight/2 - yesBtnCenterY, 2)
+                    );
+                    
+                    // Check if new position is far enough from Yes button
+                    if (distanceFromYes > safeZoneRadius) {
+                        validPosition = true;
+                    }
+                    
                     attempts++;
-                } while (attempts < 10 && Math.abs(newX - noBtnPosition.x) < 100);
+                }
                 
-                noBtnPosition.x = newX;
-                noBtnPosition.y = newY;
-                
-                noBtn.style.left = newX + 'px';
-                noBtn.style.top = newY + 'px';
+                // If we found a valid position, use it
+                if (validPosition) {
+                    noBtnPosition.x = newX;
+                    noBtnPosition.y = newY;
+                    
+                    noBtn.style.left = newX + 'px';
+                    noBtn.style.top = newY + 'px';
+                }
             }
         }
 
@@ -506,15 +538,63 @@
         function initializeNoButton() {
             const containerRect = buttonsContainer.getBoundingClientRect();
             const btnRect = noBtn.getBoundingClientRect();
+            const yesBtnRect = yesBtn.getBoundingClientRect();
             
-            noBtnPosition.x = (containerRect.width - btnRect.width) / 2 + 150;
-            noBtnPosition.y = (containerRect.height - btnRect.height) / 2;
+            const containerWidth = containerRect.width;
+            const containerHeight = containerRect.height;
+            const btnWidth = btnRect.width;
+            const btnHeight = btnRect.height;
+            
+            // Calculate Yes button center relative to container
+            const yesBtnCenterX = yesBtnRect.left - containerRect.left + yesBtnRect.width / 2;
+            const yesBtnCenterY = yesBtnRect.top - containerRect.top + yesBtnRect.height / 2;
+            
+            // Position No button away from Yes button
+            let initialX, initialY;
+            const safeDistance = window.innerWidth < 768 ? 140 : 180;
+            
+            // Try different positions
+            const positions = [
+                { x: containerWidth - btnWidth - 20, y: containerHeight / 2 - btnHeight / 2 }, // Right
+                { x: 20, y: containerHeight / 2 - btnHeight / 2 }, // Left
+                { x: containerWidth / 2 - btnWidth / 2, y: containerHeight - btnHeight - 20 }, // Bottom
+                { x: containerWidth / 2 - btnWidth / 2, y: 20 }, // Top
+            ];
+            
+            // Find first position that's far enough from Yes button
+            for (let pos of positions) {
+                const dist = Math.sqrt(
+                    Math.pow(pos.x + btnWidth/2 - yesBtnCenterX, 2) + 
+                    Math.pow(pos.y + btnHeight/2 - yesBtnCenterY, 2)
+                );
+                
+                if (dist > safeDistance) {
+                    initialX = pos.x;
+                    initialY = pos.y;
+                    break;
+                }
+            }
+            
+            // Fallback to right side if no position found
+            if (initialX === undefined) {
+                initialX = containerWidth - btnWidth - 20;
+                initialY = 20;
+            }
+            
+            noBtnPosition.x = initialX;
+            noBtnPosition.y = initialY;
             
             noBtn.style.left = noBtnPosition.x + 'px';
             noBtn.style.top = noBtnPosition.y + 'px';
         }
 
-        setTimeout(initializeNoButton, 100);
+        // Initialize after a short delay to ensure layout is ready
+        setTimeout(initializeNoButton, 200);
+        
+        // Reinitialize on window resize
+        window.addEventListener('resize', () => {
+            setTimeout(initializeNoButton, 100);
+        });
 
         // Yes button click handler
         yesBtn.addEventListener('click', () => {
